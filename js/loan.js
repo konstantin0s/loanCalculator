@@ -48,3 +48,64 @@ function calculate() {
   }
 
 }
+
+//Save the user-s input as properties of the localStorage object
+function save(amount, apr, years, zipcode) {
+  if (window.localStorage) { //Do this only if the browser supports it.
+    localStorage.loan_amount = amount;
+    localStorage.loan_apr = apr;
+    localStorage.loan_years = years;
+    localStorage.loan_zipcode = zipcode;
+
+  }
+}
+
+//Automatically attempt to restore input fields when the document first loads.
+window.onload = function() {
+  //If the browser supports localStorage and we have some stored Data
+  if (window.localStorage && localStorage.loan_amount) {
+    document.getElementById("amount").value = localStorage.loan_amount;
+    document.getElementById("apr").value = localStorage.loan_apr;
+    document.getElementById("years").value = localStorage.loan_years;
+    document.getElementById("zipcode").value = localStorage.loan_zipcode;
+  }
+};
+
+//Pass the user's input to a server-side script which can (in theory) return a list of links to local lenders interested in making loans.
+
+if(!window.XMLHttpRequest) return;
+
+//Find the element to display the list of lenders in
+var ad = document.getElementById("lenders");
+if (!ad) return; // quit if no spot for output
+
+//Encode the user's input as query parameters in a URL
+var url = "getLenders.php" +
+"?amt=" + encodeURIComponent(amount) +
+"&apr=" + encodeURIComponent(apr) +
+"&yrs=" + encodeURIComponent(years) +
+"&zip=" + encodeURIComponent(zipcode);
+
+
+//Fetch the content of that url using XMLHttpRequest
+var req = new XMLHttpRequest();
+req.open("GET", url);
+req.send(null);
+
+//Before returning, register an event handle function that will be called at some time later in the HTTP server's response arrives.
+req.onreadystatechange = function() {
+  //IF we get herem we got a complete valid HTTP response
+  var response = req.responseText;
+  var lenders = JSON.parse(response);
+
+  //Convert the array of lender object to a string of html
+  var list = "";
+  for(var i = 0; i < lenders.length; i++) {
+    list += "<li><a href='" + lenders[i].url +"'>" +
+         lenders[i].name + "</a>";
+  }
+  //Display the HTML in the element from above.
+  ad.innerHTML = "<ul>" + list + "</ul>";
+}
+}
+}
